@@ -1,5 +1,8 @@
 # calibration
-![picture](https://github.com/nosmokingsurfer/hexapod_project/blob/master/um_tests/mozaik/pics/18-Jan-18%205-50-22%20PM.png)
+![picture](https://github.com/nosmokingsurfer/calibration/blob/master/pics/pic1.png)
+
+
+![picture](https://github.com/nosmokingsurfer/calibration/blob/master/pics/pic2.png)
 
 
 ## Goal of this project
