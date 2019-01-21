@@ -21,7 +21,7 @@ PointCloud<PointXYZ>::Ptr getRawLidarData(const ModelCoefficients& plane, const 
   std::default_random_engine generator;
 
   std::normal_distribution<float> scale_error(1.0, 0.00000000001);
-  std::normal_distribution<float> range_eror(0, 0.1);
+  std::normal_distribution<float> range_eror(0, 0.02);
   
   //ground plane parameters
   Vector3f n;
@@ -92,8 +92,8 @@ int main(int argc, char** argv)
   visualization::PCLVisualizer::Ptr viewer(new visualization::PCLVisualizer("lidar viewer"));
 
   visualization::PointCloudColorHandlerCustom<PointXYZ> raw_rgb(raw_data, 0, 255, 0);
-  viewer->addPointCloud<pcl::PointXYZ>(raw_data, raw_rgb, "raw_data");
-  viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_POINT_SIZE, 4, "raw_data");
+  //viewer->addPointCloud<pcl::PointXYZ>(raw_data, raw_rgb, "raw_data");
+  //viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_POINT_SIZE, 4, "raw_data");
 
   viewer->addCoordinateSystem(2, lidarPose.T.inverse(), "lidar");
   
@@ -119,6 +119,7 @@ int main(int argc, char** argv)
 
   visualization::PointCloudColorHandlerCustom<PointXYZ> plane_rgb(plane_points, 255,0,0);
   viewer->addPointCloud<PointXYZ>(plane_points,"plane_points");
+
 
   viewer->addPlane(*plane_coeffs, "plane");
 
