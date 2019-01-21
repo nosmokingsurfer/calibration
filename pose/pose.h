@@ -22,22 +22,22 @@ using namespace Eigen;
 class Pose{
 public: 
   Pose();
-  Pose(const Vector3d& angles);
-  Pose(const Vector3d& angles, const  Vector3d& t);
-  Pose(const Transform<double, 3, Affine>& T);
+  Pose(const Vector3f& angles);
+  Pose(const Vector3f& angles, const  Vector3f& t);
+  Pose(const Transform<float, 3, Affine>& T);
   ~Pose();  
 
 public:
-  Transform<double, 3, Affine> T;
+  Transform<float, 3, Affine> T;
 
 public:
-  MatrixXd getRotation();
-  Vector3d getTranslation();
+  MatrixXf getRotation();
+  Vector3f getTranslation();
 
-  bool setPosition(Eigen::Vector3d position);
+  bool setPosition(Eigen::Vector3f position);
   void getAngles();
 
-  static Pose getRotationAroundAxis(Vector3d axis, double angle);
+  static Pose getRotationAroundAxis(Vector3f axis, float angle);
   Pose operator*(Pose);
   Pose inverse();
 
