@@ -53,10 +53,10 @@ Camera::Camera(const Pose & pose_)
 {
   this->distortion << -1.1983283309789111e-01, 2.7076763925130121e-01, 0., 0., -7.3458604303021896e-02;
 
-  this->projection << 1.3902272312258694e+02, 0., 9.6233905637830708e+02,
-                                    0., 1.3902272312258694e+02, 5.3110096918356703e+02, 
-                                    0., 0., 1.;
-  this->imageSize <<  1080, 580;
+  this->projection << 140, 0., 70,
+                      0., 140, 70, 
+                      0.,  0., 1.;
+  this->imageSize <<  140, 140;
 }
 
 Camera::Camera(const Matrix3f &K, const Matrix<float,5,1> &D, const Pose& pose, const Vector2i &sz)
@@ -76,18 +76,16 @@ Vector2i Camera::projectPt(Vector3f pt) const
   return Vector2i();
 }
 
-pcl::PointCloud<pcl::PointXYZ> Camera::getRawDepthData(const pcl::ModelCoefficients& plane)
+pcl::PointCloud<pcl::PointXYZ>::Ptr Camera::getRawDepthData(const pcl::ModelCoefficients& plane)
 {
-  PointCloud<PointXYZ> result;
+  PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
 
-  Vector3f n;
-  n << plane.values[0], plane.values[1], plane.values[2];
+  Vector4f plane_coeffs(plane.values.data());
+  plane_coeffs = this->pose.inverse().getTransformation().matrix().transpose()*plane_coeffs;
 
-  float d = plane.values[3];
+  Vector3f n(plane_coeffs.head(3));
 
-  //TODO transform plane to camera frame
-
-  Vector3f r_0 = this->pose.inverse().getTranslation();
+  float d = plane_coeffs[3];
 
   for(auto i = 0; i < this->imageSize[0]; i++)
   {
@@ -97,19 +95,17 @@ pcl::PointCloud<pcl::PointXYZ> Camera::getRawDepthData(const pcl::ModelCoefficie
       tau = this->reprojectPtWithDist(Vector2i(i, j), 1); //direction in camera pose
       tau = this->pose.inverse()(tau); //direction in global frame
 
-      float t = -(r_0.dot(n) + d)/(tau.dot(n));
+      float t = -d/(tau.dot(n));
 
-      if (t <= maxRange_)
+      if ((t <= maxRange_) && (t >= 0))
       {
         Vector3f r;
 
-        r = r_0 + t*tau;
+        r = t*tau;
 
-        r = this->pose(r);
+        r = this->pose.inverse()(r);
 
-        
-
-        result.points.push_back(PointXYZ((float)r.x(), (float)r.y(), (float)r.z()));
+        result->points.push_back(PointXYZ((float)r.x(), (float)r.y(), (float)r.z()));
       }
     }
   }

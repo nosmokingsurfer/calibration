@@ -10,33 +10,28 @@ using namespace pcl;
 
 
 Lidar::Lidar():
-scaleErrorMean(1.0),
-scaleErrorSigma(std::numeric_limits<float>::min()),
 rangeErrorMean(0.0),
 rangeErrorSigma(0.03)
 {
-  this->scale_error_ = std::normal_distribution<float>(scaleErrorMean, scaleErrorSigma);
   this->range_error_ = std::normal_distribution<float>(rangeErrorMean, rangeErrorSigma);
 }
 
 Lidar::~Lidar()
 {}
 
-pcl::PointCloud<pcl::PointXYZ> Lidar::getRawLidarData(const pcl::ModelCoefficients& plane)
+pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoefficients& plane)
 {
-  PointCloud<PointXYZ> result;
+  PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
 
   std::default_random_engine generator;
 
-  //ground plane parameters
-  Vector3f n;
-  n << plane.values[0], plane.values[1], plane.values[2];
+  Vector4f plane_coeffs(plane.values.data());
 
-  //TODO transform plane to lidar frame
+  plane_coeffs = this->pose.inverse().getTransformation().matrix().transpose()*plane_coeffs;
 
-  float d = plane.values[3];
+  Vector3f n(plane_coeffs.head(3));
 
-  Vector3f r_0 = this->pose.inverse().getTranslation();
+  float d = plane_coeffs[3];
 
   for (auto i = 0; i < 900; i++)
   {
@@ -46,24 +41,23 @@ pcl::PointCloud<pcl::PointXYZ> Lidar::getRawLidarData(const pcl::ModelCoefficien
       float elevation = -15 * EIGEN_PI / 180.0 + j*elevation_delta_;
 
       Vector3f tau;
-      tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation);
+      tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation); //laser beam vector
 
-      float t = -(r_0.dot(n) + d) / (tau.dot(n));
+      float t = -d / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
 
-      t = t*scale_error_(generator) + range_error_(generator);
+      t += this->range_error_(generator); //adding range error
 
-      if ((tau.dot(n) < 0) && t <= maxRange_)
+      if ((tau.dot(n) < 0) && (t <= maxRange_) && (t >= minRange_))
       {
         Vector3f r;
-        r = r_0 + t*tau; // point in global frame
+        r = t*tau; // point on plane in lidar frame
 
-        r = this->pose(r); // the same point in lidar frame
+        r = this->pose.inverse()(r); // the same point in global frame
 
-        result.points.push_back(PointXYZ((float)r.x(), (float)r.y(), (float)r.z()));
+        result->points.push_back(PointXYZ((float)r.x(), (float)r.y(), (float)r.z()));
       }
     }
   }
-
 
   return result;
 }

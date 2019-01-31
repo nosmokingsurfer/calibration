@@ -15,36 +15,35 @@ using namespace pcl;
 
 int main(int argc, char** argv) 
 {
-  ModelCoefficients plane;
+  ModelCoefficients plane; // plane coeffs in global frame
   plane.values.push_back(0);
   plane.values.push_back(0);
   plane.values.push_back(1);
   plane.values.push_back(0);
   
-  Vector3f gt_angles;
-  gt_angles << 0,0,0;
+  Vector3f gt_angles; // lidar pose angles in global frame
+  gt_angles << 0,-EIGEN_PI/4,0;
 
-  Vector3f gt_translation;
-  gt_translation << 0,0,1;
+  Vector3f gt_translation; // lidar pose translation in global frame
+  gt_translation << 0, 0, 1.1;
 
   
   Lidar lidar;
 
   lidar.pose = Pose(gt_angles, gt_translation);
 
-  PointCloud<PointXYZ> raw_data = lidar.getRawLidarData(plane);
+  PointCloud<PointXYZ>::Ptr raw_data = lidar.getRawLidarData(plane); // generating lidar data in global frame
 
-  Camera cam(Pose(gt_angles, gt_translation));
-
-
-  //raw_data = cam.getRawDepthData(plane);
-
-  PointCloud<PointXYZ>::Ptr raw_data_ptr = boost::make_shared<PointCloud<PointXYZ>>(raw_data);
+  Camera cam(lidar.pose);
+  
+  
+  raw_data = cam.getRawDepthData(plane);
 
   visualization::PCLVisualizer::Ptr viewer(new visualization::PCLVisualizer("lidar viewer"));
+  viewer->addCoordinateSystem(0.5, 0, 0, 0, "GF_origin");
 
-  visualization::PointCloudColorHandlerCustom<PointXYZ> raw_rgb(raw_data_ptr, 0, 255, 0);
-  viewer->addPointCloud<pcl::PointXYZ>(raw_data_ptr, raw_rgb, "raw_data");
+  visualization::PointCloudColorHandlerCustom<PointXYZ> raw_rgb(raw_data, 0, 255, 0);
+  viewer->addPointCloud<pcl::PointXYZ>(raw_data, raw_rgb, "raw_data");
   viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_POINT_SIZE, 4, "raw_data");
 
   viewer->addCoordinateSystem(2, lidar.pose.inverse().getTransformation(), "lidar");
@@ -55,7 +54,7 @@ int main(int argc, char** argv)
   PointIndices::Ptr inliers(new PointIndices);
   SACSegmentation<PointXYZ> seg;
 
-  seg.setInputCloud(raw_data_ptr);
+  seg.setInputCloud(raw_data);
   seg.setMethodType(pcl::SAC_RANSAC);
   seg.setModelType(pcl::SACMODEL_PLANE);
   seg.setDistanceThreshold(0.01);
@@ -65,7 +64,7 @@ int main(int argc, char** argv)
   //extract points
   PointCloud<PointXYZ>::Ptr plane_points(new PointCloud<PointXYZ>);
   ExtractIndices<PointXYZ> extract;
-  extract.setInputCloud(raw_data_ptr);
+  extract.setInputCloud(raw_data);
   extract.setIndices(inliers);
   extract.filter(*plane_points);
 
@@ -74,17 +73,6 @@ int main(int argc, char** argv)
 
 
   viewer->addPlane(*plane_coeffs, "plane");
-
-  std::cout << "Estimated plane coeffs:" << std::endl;
-  for(auto p : plane_coeffs->values)
-  {
-    std::cout << p << std::endl;
-  }
-
-  float lidarHeight = plane_coeffs->values[3];
-
-  std::cout << "Lidar height = " << lidarHeight << std::endl;
-
 
   while(!viewer->wasStopped())
   {

@@ -12,18 +12,11 @@
 
 #include <Eigen/Dense>
 #include <pose.h>
+#include <pcl/common/common_headers.h>
+#include <pcl/ModelCoefficients.h>
 
 using namespace Eigen;
 
-namespace pcl
-{
-  struct PointXYZ;
-
-  template<typename T>
-  class PointCloud;
-
-  struct ModelCoefficients;
-}
 
 class Camera
 {
@@ -86,7 +79,7 @@ public:
 
   float maxRange_;
 
-  pcl::PointCloud<pcl::PointXYZ> getRawDepthData(const pcl::ModelCoefficients& plane);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr getRawDepthData(const pcl::ModelCoefficients& plane);
 };
 
 #endif //

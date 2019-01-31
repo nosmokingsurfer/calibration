@@ -21,9 +21,9 @@ Pose::Pose(const Vector3f& angles, const Vector3f& t)
 {
   
   this->T = Translation<float,3>(t)
-            *AngleAxis<float>(angles[0], Vector3f::UnitZ())
-            *AngleAxis<float>(angles[1], Vector3f::UnitX())
-            *AngleAxis<float>(angles[2], Vector3f::UnitY());
+            *AngleAxis<float>(angles[0], Vector3f::UnitZ()) //yaw
+            *AngleAxis<float>(angles[1], Vector3f::UnitX()) //pitch
+            *AngleAxis<float>(angles[2], Vector3f::UnitY()); //roll
 
   this->T = this->T.inverse();  
 }
