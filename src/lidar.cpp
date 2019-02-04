@@ -16,6 +16,14 @@ rangeErrorSigma(0.03)
   this->range_error_ = std::normal_distribution<float>(rangeErrorMean, rangeErrorSigma);
 }
 
+
+Lidar::Lidar(const Pose& pose)
+{
+  (*this) = Lidar();
+
+  this->pose = pose;
+}
+
 Lidar::~Lidar()
 {}
 
@@ -47,10 +55,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
 
       tau = this->pose.inv().getRotation()*tau;
 
-      result->points.push_back(PointXYZ((r_0 + tau).x(),
-                                        (r_0 + tau).y(),
-                                        (r_0 + tau).z()));
-
 
       float t = -(r_0.dot(n) + d) / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
 
@@ -63,6 +67,33 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
 
         result->points.push_back(PointXYZ(r.x(), r.y(), r.z()));
       }
+    }
+  }
+
+  return result;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getProjectionModel() const
+{
+  PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
+
+  Vector3f r_0 = this->pose.inv().getTranslation();
+
+  for (auto i = 0; i < 900; i++)
+  {
+    float azimuth = i*azimuth_delta_;
+    for (auto j = 0; j < 16; j++)
+    {
+      float elevation = -15 * EIGEN_PI / 180.0 + j*elevation_delta_;
+
+      Vector3f tau;
+      tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation); //laser beam vector
+
+      tau = this->pose.inv().getRotation()*tau;
+
+      result->points.push_back(PointXYZ((r_0 + tau).x(),
+                                        (r_0 + tau).y(),
+                                        (r_0 + tau).z()));
     }
   }
 

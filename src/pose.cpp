@@ -36,18 +36,18 @@ Pose::Pose(const Transform<float, 3, Affine>& _T)
 Pose::~Pose()
 {}
 
-Eigen::MatrixXf Pose::getRotation()
+Eigen::MatrixXf Pose::getRotation() const
 {
   return this->T.rotation();
 }
 
-Eigen::Vector3f Pose::getTranslation()
+Eigen::Vector3f Pose::getTranslation() const
 {
   return this->T.translation();
 }
 
 
-Eigen::Vector3f Pose::getAngles()
+Eigen::Vector3f Pose::getAngles() const
 {
   return this->T.rotation().eulerAngles(2,0,1);
 }

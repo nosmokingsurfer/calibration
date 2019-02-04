@@ -24,6 +24,7 @@ class Lidar
 {
   public:
     Lidar();
+    Lidar(const Pose& pose);
     ~Lidar();
 
   public:
@@ -44,6 +45,8 @@ class Lidar
 
   public:
    pcl::PointCloud<pcl::PointXYZ>::Ptr getRawLidarData(const pcl::ModelCoefficients& plane);
+
+   pcl::PointCloud<pcl::PointXYZ>::Ptr getProjectionModel() const;
 };
 
 #endif //LIDAR_H

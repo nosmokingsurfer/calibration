@@ -32,19 +32,19 @@ private:
 public:
   //! @brief get corresponding rotation matrix from pose
   //! @retval 3 by 3 rotation matrix
-  MatrixXf getRotation();
+  MatrixXf getRotation() const;
 
   //! @brief get correspondin translation vector from pose
   //! @retval 3d translation vector
-  Vector3f getTranslation();
+  Vector3f getTranslation() const;
 
   //! @brief get Euler corresponding angles
   //! @retval 3d vector with [yaw, pitch, roll] angles
-  Vector3f getAngles();
+  Vector3f getAngles() const;
 
   //! @brief get inverse Pose: pose*pose.inverse() = E
   //! @retval inverse pose
-  Pose inverse() const;
+  Pose inv() const;
 
 
   //! @brief get homogenous transformation corresponding to Pose

@@ -25,6 +25,7 @@ private:
 
 
 public:
+  Camera::Camera();
 
   Camera::Camera(const Pose& pose);
 
@@ -58,6 +59,7 @@ public:
   float maxRange_;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr getRawDepthData(const pcl::ModelCoefficients& plane);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr getProjectionModel() const;
 };
 
 #endif //

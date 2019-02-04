@@ -12,6 +12,21 @@
 
 using namespace pcl;
 
+//returns oriented distance from point to given plane
+float getDist(const Pose& pose, const ModelCoefficients& plane)
+{
+  float result = 0;
+
+  Vector3f n(plane.values.data());
+  float d = plane.values[3];
+
+  Vector3f point = pose.inv().getTranslation();
+
+  result = (point.dot(n) + d)/n.norm();
+
+  return result;
+}
+
 
 int main(int argc, char** argv) 
 {
@@ -20,33 +35,51 @@ int main(int argc, char** argv)
   plane.values.push_back(0);
   plane.values.push_back(1);
   plane.values.push_back(0);
-  
-  Vector3f gt_angles; // lidar pose angles in global frame
-  gt_angles << 0, -EIGEN_PI/6., EIGEN_PI/10;
-  Vector3f gt_translation; // lidar pose translation in global frame
-  gt_translation << 0, 0, 3;
 
+  Vector3f gt_angles; //device pose angles in global frame
+  gt_angles << 0, 0, 0;
+  Vector3f gt_translation; //device pose translation in global frame
+  gt_translation << 0, 0, 0;
   
+  Pose gt_pose;
+
+  Camera cam;
   Lidar lidar;
 
-  lidar.pose = Pose(gt_angles, gt_translation);
+  PointCloud<PointXYZ>::Ptr raw_data; //pointer for raw data
 
-  PointCloud<PointXYZ>::Ptr raw_data = lidar.getRawLidarData(plane); // generating lidar data in global frame
-
-  Camera cam(lidar.pose);
+  if (argc != 2)
+  {
+    std::cout << "Enter flags as follows:" << std::endl <<
+      "\t-c for depth camera test" << std::endl <<
+      "\t-l for lidar test" << std::endl;
+      return 0;
+  }
+  else if (argc == 2)
+  {
   
-  
-  //raw_data = cam.getRawDepthData(plane);
+    std::cout << "Enter device z coordianete above horizontal plane:" << std::endl;
+    std::cin >> gt_translation[2];
 
-  visualization::PCLVisualizer::Ptr viewer(new visualization::PCLVisualizer("lidar viewer"));
+    gt_pose = Pose(gt_angles, gt_translation);
+
+    if(std::string(argv[1]) == "-c")
+    {
+      cam = Camera(gt_pose);
+      raw_data = cam.getRawDepthData(plane);
+    }
+    else if (std::string(argv[1]) == "-l")
+    {
+      lidar = Lidar(gt_pose);
+      raw_data = lidar.getRawLidarData(plane);
+    }
+  }  
+
+  visualization::PCLVisualizer::Ptr viewer(new visualization::PCLVisualizer("PointCloud viewer"));
   viewer->addCoordinateSystem(0.5, 0, 0, 0, "GF_origin");
 
   visualization::PointCloudColorHandlerCustom<PointXYZ> raw_rgb(raw_data, 0, 255, 0);
   viewer->addPointCloud<pcl::PointXYZ>(raw_data, raw_rgb, "raw_data");
-  viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_POINT_SIZE, 4, "raw_data");
-
-  viewer->addCoordinateSystem(2, cam.pose.inv().getTransformation(), "lidar");
-  
 
   //estimate plane model
   ModelCoefficients::Ptr plane_coeffs(new ModelCoefficients);
@@ -70,8 +103,31 @@ int main(int argc, char** argv)
   visualization::PointCloudColorHandlerCustom<PointXYZ> plane_rgb(plane_points, 255,0,0);
   viewer->addPointCloud<PointXYZ>(plane_points,"plane_points");
 
-
   viewer->addPlane(*plane_coeffs, "plane");
+
+  if(std::string(argv[1]) == "-c")
+  {
+    float dist = getDist(cam.pose, plane);
+    viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist), 50, 50);
+
+    pcl::PointCloud<PointXYZ>::Ptr projectionPoints = cam.getProjectionModel();
+    visualization::PointCloudColorHandlerCustom<PointXYZ> projection_rgb(projectionPoints, 255, 255, 0);
+    viewer->addPointCloud<pcl::PointXYZ>(projectionPoints, projection_rgb, "projection_data");
+
+    viewer->addCoordinateSystem(2, cam.pose.inv().getTransformation(), "sensor");
+  }
+  else if(std::string(argv[1]) == "-l")
+  {
+    float dist = getDist(lidar.pose, plane);
+    viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist),50, 50);
+
+    pcl::PointCloud<PointXYZ>::Ptr projectionPoints = lidar.getProjectionModel();
+    visualization::PointCloudColorHandlerCustom<PointXYZ> projection_rgb(projectionPoints, 255, 255, 0);
+    viewer->addPointCloud<pcl::PointXYZ>(projectionPoints, projection_rgb, "projection_data");
+
+    viewer->addCoordinateSystem(2, lidar.pose.inv().getTransformation(), "sensor");
+  }
+
 
   while(!viewer->wasStopped())
   {
