@@ -22,10 +22,9 @@ int main(int argc, char** argv)
   plane.values.push_back(0);
   
   Vector3f gt_angles; // lidar pose angles in global frame
-  gt_angles << 0,-EIGEN_PI/4,0;
-
+  gt_angles << 0, -EIGEN_PI/6., EIGEN_PI/10;
   Vector3f gt_translation; // lidar pose translation in global frame
-  gt_translation << 0, 0, 1.1;
+  gt_translation << 0, 0, 3;
 
   
   Lidar lidar;
@@ -37,7 +36,7 @@ int main(int argc, char** argv)
   Camera cam(lidar.pose);
   
   
-  raw_data = cam.getRawDepthData(plane);
+  //raw_data = cam.getRawDepthData(plane);
 
   visualization::PCLVisualizer::Ptr viewer(new visualization::PCLVisualizer("lidar viewer"));
   viewer->addCoordinateSystem(0.5, 0, 0, 0, "GF_origin");
@@ -46,7 +45,7 @@ int main(int argc, char** argv)
   viewer->addPointCloud<pcl::PointXYZ>(raw_data, raw_rgb, "raw_data");
   viewer->setPointCloudRenderingProperties(visualization::PCL_VISUALIZER_POINT_SIZE, 4, "raw_data");
 
-  viewer->addCoordinateSystem(2, lidar.pose.inverse().getTransformation(), "lidar");
+  viewer->addCoordinateSystem(2, cam.pose.inv().getTransformation(), "lidar");
   
 
   //estimate plane model

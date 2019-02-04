@@ -20,6 +20,10 @@ using namespace Eigen;
 
 class Camera
 {
+private:
+  Pose axisRemapping{Vector3f(0,-EIGEN_PI/2,0),Vector3f(0,0,0)};
+
+
 public:
 
   Camera::Camera(const Pose& pose);
@@ -36,38 +40,12 @@ public:
   //! @retval Vector2i - resulting pixel coordinates
   Eigen::Vector2i projectPt(Eigen::Vector3f pt) const;
 
-  // reprojects a point on image to 3d relative to this->pose CS, with an
-  // assumption of the point height is meterheight
-  //! @brief восстановить точку с заданной высотой
-  //! @param[in] pixel координаты пикселя, соответствующего данной точке
-  //! @param[in] meterHeight высота пикселя в метрах (относительно pose)
-  //! @param[in] usePrecalc использовать или нет прекалькуляционное вычисление Ainv для быстрого восстановления пачки точек
-  //! @retval cv::Point3d трехмерная точка на высоте meterHeight, попадающая в pixel при проекции данной камерой
-  //! Функция восстанавливает точку, соответсвтующую данному пикселю, при предположении, что высота 3d точки была
-  //! meterHeight. Восстановленная точка имеет координаты в с.к. exPose.inv()
-  Eigen::Vector3f reprojectPtWithHeight(Eigen::Vector2i pixel, float meterHeight = 0) const;
-
-  // reprojects a point pixel on image to 3d relative to this->pose CS, with an
-  // assumption of the point DEPTH is meterDepth. 
-  // Depth here means a value of Z coordinate in camera CS (exPose)
-  //! @brief восстановить точку с заданной глубиной
-  //! @param[in] pixel координаты пикселя, соответствующего данной точке
-  //! @param[in] meterDepth глубина пикселя в метрах
-  //! @retval cv::Point3d трехмерная точка на глубине meterDepth, попадающая в pixel при проекции данной камерой.
-  //! Функция восстанавливает точку, соответсвтующую данному пикселю, при предположении, что
-  //! глубина точки - meterDepth. Под глубиной здесь понимается z-координата точки 
-  //! в с.к. exPose. Восстановленная точка имеет координаты в с.к. exPose.inv()
-  Eigen::Vector3f reprojectPtWithDepth(Eigen::Vector2i pixel, float meterDepth) const;
-
   // reprojects a point pixel on image to 3d relative to this->pose CS, with an
   // assumption of the point eukledian distance from camera origin to 3D point is meterDist. 
-  //! @brief восстановить точку на заданном расстоянии от камеры.
-  //! @param[in] pixel координаты пикселя, соответствующего данной точке
-  //! @param[in] meterDist расстояние до точки в метрах
-  //! @retval cv::Point3d трехмерная точка на расстоянии meterDist, попадающая в pixel при проекции данной камерой.
-  //! Функция восстанавливает точку, соответсвтующую данному пикселю, при предположении, что
-  //! расстояние до точки - meterDist. Под расстоянием здесь понимается эвклидово расстояние до точки
-  //! от оптического центра. Восстановленная точка имеет координаты в с.к. exPose.inv()
+  //! @brief Reconstructs 3d point for give (i,j) pixel and given meter dist
+  //! @param[in] pixel - pixel to reproject
+  //! @param[in] meterDist range in meters
+  //! @retval Vector3f 3d point in global frame. 
   Eigen::Vector3f reprojectPtWithDist(Eigen::Vector2i pixel, float meterDist) const;
 
 public:

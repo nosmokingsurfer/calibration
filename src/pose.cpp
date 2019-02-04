@@ -63,7 +63,7 @@ Vector3f Pose::operator()(const Vector3f& point) const
   return this->T*point;
 }
 
-Pose Pose::inverse() const
+Pose Pose::inv() const
 {
   return Pose(this->T.inverse());
 }

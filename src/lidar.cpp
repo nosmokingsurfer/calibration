@@ -27,11 +27,13 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
 
   Vector4f plane_coeffs(plane.values.data());
 
-  plane_coeffs = this->pose.inverse().getTransformation().matrix().transpose()*plane_coeffs;
+  //plane_coeffs = this->pose.inv().getTransformation().matrix().transpose()*plane_coeffs;
 
   Vector3f n(plane_coeffs.head(3));
 
   float d = plane_coeffs[3];
+
+  Vector3f r_0 = this->pose.inv().getTranslation();
 
   for (auto i = 0; i < 900; i++)
   {
@@ -43,18 +45,23 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
       Vector3f tau;
       tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation); //laser beam vector
 
-      float t = -d / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
+      tau = this->pose.inv().getRotation()*tau;
+
+      result->points.push_back(PointXYZ((r_0 + tau).x(),
+                                        (r_0 + tau).y(),
+                                        (r_0 + tau).z()));
+
+
+      float t = -(r_0.dot(n) + d) / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
 
       t += this->range_error_(generator); //adding range error
 
       if ((tau.dot(n) < 0) && (t <= maxRange_) && (t >= minRange_))
       {
         Vector3f r;
-        r = t*tau; // point on plane in lidar frame
+        r = r_0 + t*tau; // point on plane in lidar frame
 
-        r = this->pose.inverse()(r); // the same point in global frame
-
-        result->points.push_back(PointXYZ((float)r.x(), (float)r.y(), (float)r.z()));
+        result->points.push_back(PointXYZ(r.x(), r.y(), r.z()));
       }
     }
   }
