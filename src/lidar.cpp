@@ -10,12 +10,12 @@ using namespace pcl;
 
 
 Lidar::Lidar()
-: rangeErrorMean(0.0)
-, rangeErrorSigma(0.03)
+: rangeErrorMean_(0.0)
+, rangeErrorSigma_(0.03)
 , minRange_(0.5)
 , maxRange_(100.0)
 {
-  this->range_error_ = std::normal_distribution<float>(rangeErrorMean, rangeErrorSigma);
+  this->range_error_ = std::normal_distribution<float>(rangeErrorMean_, rangeErrorSigma_);
 }
 
 
@@ -23,7 +23,7 @@ Lidar::Lidar(const Pose& pose)
 {
   (*this) = Lidar();
 
-  this->pose = pose;
+  this->pose_ = pose;
 }
 
 Lidar::~Lidar()
@@ -38,7 +38,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
   Vector4f plane_coeffs(plane.values.data());
 
   //plane model in sensor related frame
-  plane_coeffs = this->pose.inv().getTransformation().matrix().transpose()*plane_coeffs; 
+  plane_coeffs = this->pose_.inv().getTransformation().matrix().transpose()*plane_coeffs; 
 
   Vector3f n(plane_coeffs.head(3));
 

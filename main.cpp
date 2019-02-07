@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     if(plane_coeffs->values.size() == 4)
     { 
       float dist = getDist(Vector3f(), *plane_coeffs);
-      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist), 50, 50);
+      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist), 50, 50,20, 1, 1, 1);
     }
     else
     {
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     if(plane_coeffs->values.size() == 4)
     { 
       float dist = getDist(Vector3f(), *plane_coeffs);
-      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist),50, 50);
+      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist),50, 50, 20, 1,1, 1);
     }
     else
     {

@@ -52,21 +52,27 @@ public:
 
 public:
   //camera projection parameters
-  Eigen::Matrix3f projection;
-  Eigen::Matrix<float, 5, 1> distortion;
-  Eigen::Vector2i imageSize;
-  Pose pose;
+  Eigen::Matrix3f projection_; // projection matrix
+  Eigen::Matrix<float, 5, 1> distortion_; //radial distortion coeffs
+  Eigen::Vector2i imageSize_; // image size
+  Pose pose_; //sensor pose in global frame
 
-  float maxRange_;
-  float minRange_;
+  float maxRange_; //max depth cam measurement range
+  float minRange_; //min depth cam measurement range
 
 
-  float rangeErrorMean;
-  float rangeErrorSigma;
+  float rangeErrorMean_; // mean range error
+  float rangeErrorSigma_; // covariance of range error
 
-  std::normal_distribution<float> range_error_;
+  std::normal_distribution<float> range_error_; // range error random generator
 
+  //! @brief Returns point cloud in sensor frame for give plane model
+  //! @param [in] plane - array of coefficients of plane equation a*x + b*y + c*z + d = 0
+  //! @retval point cloud - points on a plane with some random range errors
   pcl::PointCloud<pcl::PointXYZ>::Ptr getRawDepthData(const pcl::ModelCoefficients& plane);
+
+  //! @brief Returns point cloud in sensor frame which represents sensor perception model.
+  //! @brief Good for debug purposes
   pcl::PointCloud<pcl::PointXYZ>::Ptr getProjectionModel() const;
 };
 
