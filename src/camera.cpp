@@ -20,13 +20,19 @@ Vector3f Camera::reprojectPtWithDist(Vector2i pixel, float meterDist) const
 
 Camera::Camera()
   : pose(Pose())
+  , rangeErrorMean(0.0)
+  , rangeErrorSigma(0.03)
   , maxRange_(40.0)
+  , minRange_(1.0)
 {
+  this->range_error_ = std::normal_distribution<float>(rangeErrorMean, rangeErrorSigma);
+
   this->distortion << -1.1983283309789111e-01, 2.7076763925130121e-01, 0., 0., -7.3458604303021896e-02;
 
   this->projection << 140, 0., 70,
                        0., 140, 70,
                        0., 0., 1.;
+
   this->imageSize << 140, 140;
 }
 
@@ -59,13 +65,15 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Camera::getRawDepthData(const pcl::ModelCoef
 {
   PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
 
+  std::default_random_engine generator;
+
   Vector4f plane_coeffs(plane.values.data());
+
+  plane_coeffs = this->pose.inv().getTransformation().matrix().transpose()*(plane_coeffs);
 
   Vector3f n(plane_coeffs.head(3));
 
   float d = plane_coeffs[3];
-
-  Vector3f r_0 = this->pose.inv().getTranslation();
 
   for(auto i = 0; i < this->imageSize[0]; i++)
   {
@@ -73,19 +81,18 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Camera::getRawDepthData(const pcl::ModelCoef
     {
       Vector3f tau;
       tau = this->reprojectPtWithDist(Vector2i(i, j), 1); //direction in image frame - Z axis is along optical axis of camera
+      tau.normalize();
       tau = this->axisRemapping.inv().getRotation()*tau; // direction in sensor related frame
-      tau = this->pose.inv().getRotation()*tau; //direction in global frame
-
-      //result->points.push_back(PointXYZ((r_0 + tau).x(), 
-      //                                  (r_0 + tau).y(), 
-      //                                  (r_0 + tau).z()));
       
-      float t = -(r_0.dot(n) + d)/(tau.dot(n));
+      float t = -d/(tau.dot(n));
+
+      t += this->range_error_(generator); //adding range error
+
       if ((t <= maxRange_) && (t >= 0))
       {
         Vector3f r;
 
-        r = r_0 + t*tau;
+        r = t*tau;
 
         result->points.push_back(PointXYZ(r.x(), r.y(), r.z()));
       }
@@ -99,8 +106,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Camera::getProjectionModel() const
 {
   PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
 
-  Vector3f r_0 = this->pose.inv().getTranslation();
-
   for (auto i = 0; i < this->imageSize[0]; i++)
   {
     for (auto j = 0; j < this->imageSize[1]; j++)
@@ -108,11 +113,10 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Camera::getProjectionModel() const
       Vector3f tau;
       tau = this->reprojectPtWithDist(Vector2i(i, j), 1); //direction in image frame - Z axis is along optical axis of camera
       tau = this->axisRemapping.inv().getRotation()*tau; // direction in sensor related frame
-      tau = this->pose.inv().getRotation()*tau; //direction in global frame
 
-      result->points.push_back(PointXYZ((r_0 + tau).x(), 
-                                        (r_0 + tau).y(), 
-                                        (r_0 + tau).z()));
+      result->points.push_back(PointXYZ(tau.x(), 
+                                        tau.y(), 
+                                        tau.z()));
     }
   }
 

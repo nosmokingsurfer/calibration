@@ -9,9 +9,11 @@ using namespace std;
 using namespace pcl;
 
 
-Lidar::Lidar():
-rangeErrorMean(0.0),
-rangeErrorSigma(0.03)
+Lidar::Lidar()
+: rangeErrorMean(0.0)
+, rangeErrorSigma(0.03)
+, minRange_(0.5)
+, maxRange_(100.0)
 {
   this->range_error_ = std::normal_distribution<float>(rangeErrorMean, rangeErrorSigma);
 }
@@ -35,13 +37,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
 
   Vector4f plane_coeffs(plane.values.data());
 
-  //plane_coeffs = this->pose.inv().getTransformation().matrix().transpose()*plane_coeffs;
+  //plane model in sensor related frame
+  plane_coeffs = this->pose.inv().getTransformation().matrix().transpose()*plane_coeffs; 
 
   Vector3f n(plane_coeffs.head(3));
 
   float d = plane_coeffs[3];
-
-  Vector3f r_0 = this->pose.inv().getTranslation();
 
   for (auto i = 0; i < 900; i++)
   {
@@ -53,17 +54,15 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getRawLidarData(const pcl::ModelCoeff
       Vector3f tau;
       tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation); //laser beam vector
 
-      tau = this->pose.inv().getRotation()*tau;
 
-
-      float t = -(r_0.dot(n) + d) / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
+      float t = - d / (tau.dot(n)); //intersection with plane where t is parameter in equation r = t*tau
 
       t += this->range_error_(generator); //adding range error
 
       if ((tau.dot(n) < 0) && (t <= maxRange_) && (t >= minRange_))
       {
         Vector3f r;
-        r = r_0 + t*tau; // point on plane in lidar frame
+        r = t*tau; // point on plane in lidar frame
 
         result->points.push_back(PointXYZ(r.x(), r.y(), r.z()));
       }
@@ -77,8 +76,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getProjectionModel() const
 {
   PointCloud<PointXYZ>::Ptr result(new PointCloud<PointXYZ>());
 
-  Vector3f r_0 = this->pose.inv().getTranslation();
-
   for (auto i = 0; i < 900; i++)
   {
     float azimuth = i*azimuth_delta_;
@@ -89,11 +86,9 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Lidar::getProjectionModel() const
       Vector3f tau;
       tau << cos(azimuth)*cos(elevation), cos(elevation)*sin(azimuth), sin(elevation); //laser beam vector
 
-      tau = this->pose.inv().getRotation()*tau;
-
-      result->points.push_back(PointXYZ((r_0 + tau).x(),
-                                        (r_0 + tau).y(),
-                                        (r_0 + tau).z()));
+      result->points.push_back(PointXYZ(tau.x(),
+                                        tau.y(),
+                                        tau.z()));
     }
   }
 

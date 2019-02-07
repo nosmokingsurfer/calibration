@@ -30,11 +30,11 @@ float getDist(const Pose& pose, const ModelCoefficients& plane)
 
 int main(int argc, char** argv) 
 {
-  ModelCoefficients plane; // plane coeffs in global frame
-  plane.values.push_back(0);
-  plane.values.push_back(0);
-  plane.values.push_back(1);
-  plane.values.push_back(0);
+  ModelCoefficients gt_plane; // plane coeffs in global frame
+  gt_plane.values.push_back(0);
+  gt_plane.values.push_back(0);
+  gt_plane.values.push_back(1);
+  gt_plane.values.push_back(0);
 
   Vector3f gt_angles; //device pose angles in global frame
   gt_angles << 0, 0, 0;
@@ -66,12 +66,12 @@ int main(int argc, char** argv)
     if(std::string(argv[1]) == "-c")
     {
       cam = Camera(gt_pose);
-      raw_data = cam.getRawDepthData(plane);
+      raw_data = cam.getRawDepthData(gt_plane);
     }
     else if (std::string(argv[1]) == "-l")
     {
       lidar = Lidar(gt_pose);
-      raw_data = lidar.getRawLidarData(plane);
+      raw_data = lidar.getRawLidarData(gt_plane);
     }
   }  
 
@@ -107,25 +107,37 @@ int main(int argc, char** argv)
 
   if(std::string(argv[1]) == "-c")
   {
-    float dist = getDist(cam.pose, plane);
-    viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist), 50, 50);
+    if(plane_coeffs->values.size() == 4)
+    { 
+      float dist = getDist(Vector3f(), *plane_coeffs);
+      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist), 50, 50);
+    }
+    else
+    {
+      viewer->addText("Estimated sensor height: FAILED", 50, 50);
+    }
 
     pcl::PointCloud<PointXYZ>::Ptr projectionPoints = cam.getProjectionModel();
+
     visualization::PointCloudColorHandlerCustom<PointXYZ> projection_rgb(projectionPoints, 255, 255, 0);
     viewer->addPointCloud<pcl::PointXYZ>(projectionPoints, projection_rgb, "projection_data");
-
-    viewer->addCoordinateSystem(2, cam.pose.inv().getTransformation(), "sensor");
   }
   else if(std::string(argv[1]) == "-l")
   {
-    float dist = getDist(lidar.pose, plane);
-    viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist),50, 50);
+    if(plane_coeffs->values.size() == 4)
+    { 
+      float dist = getDist(Vector3f(), *plane_coeffs);
+      viewer->addText("Estimated sensor height:" + boost::lexical_cast<std::string>(dist),50, 50);
+    }
+    else
+    {
+      viewer->addText("Estimated sensor height: FAILED", 50, 50);
+    }
+
 
     pcl::PointCloud<PointXYZ>::Ptr projectionPoints = lidar.getProjectionModel();
     visualization::PointCloudColorHandlerCustom<PointXYZ> projection_rgb(projectionPoints, 255, 255, 0);
     viewer->addPointCloud<pcl::PointXYZ>(projectionPoints, projection_rgb, "projection_data");
-
-    viewer->addCoordinateSystem(2, lidar.pose.inv().getTransformation(), "sensor");
   }
 
 

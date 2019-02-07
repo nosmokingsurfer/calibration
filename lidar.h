@@ -3,7 +3,7 @@
 ///@authors Panchenko A.V.
 ///@brief Lidar class - OOP class to work with lidar mathematical model of Velodyne like lidars
 ///@brief Contains device pose and generative method for lidar-plane system.
-///@brief Scale and range errors are similar to VLP16 lidar
+///@brief Range errors are similar to VLP16 lidar
 ///
 
 
@@ -32,11 +32,11 @@ class Lidar
 
   private:
     //Velodyne VLP16 like lidar parameters
-    float maxRange_{100.0};
-    float minRange_{0.5};
+    float maxRange_;
+    float minRange_;
     float azimuth_delta_{static_cast<float>(0.4*EIGEN_PI/180.0)};
     float elevation_delta_{static_cast<float>(2.0*EIGEN_PI/180.0)};
-    int lasersNUmber{16};
+    int lasersNumber{16};
 
     float rangeErrorMean;
     float rangeErrorSigma;

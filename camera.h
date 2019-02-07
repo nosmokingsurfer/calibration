@@ -1,9 +1,8 @@
 ///
 /// @file lidar.h
 ///@authors Panchenko A.V.
-///@brief Lidar class - OOP class to work with lidar mathematical model of Velodyne like lidars
-///@brief Contains device pose and generative method for lidar-plane system.
-///@brief Scale and range errors are similar to VLP16 lidar
+///@brief Camera class - OOP class to work with camera mathematical model
+///@brief Contains device pose and generative method for depthcam-plane system.
 ///
 
 #pragma once
@@ -12,6 +11,8 @@
 
 #include <Eigen/Dense>
 #include <pose.h>
+#include <random>
+
 #include <pcl/common/common_headers.h>
 #include <pcl/ModelCoefficients.h>
 
@@ -57,6 +58,13 @@ public:
   Pose pose;
 
   float maxRange_;
+  float minRange_;
+
+
+  float rangeErrorMean;
+  float rangeErrorSigma;
+
+  std::normal_distribution<float> range_error_;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr getRawDepthData(const pcl::ModelCoefficients& plane);
   pcl::PointCloud<pcl::PointXYZ>::Ptr getProjectionModel() const;
